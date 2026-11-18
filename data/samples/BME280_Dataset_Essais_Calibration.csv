@@ -1,0 +1,11 @@
+essai_id,mode_fonctionnement,tension_vdd_v,oversampling_config,filtre_iir_coeff,frequence_echantillonnage_hz,courant_moyen_ua,temp_reference_c,temp_bme280_c,erreur_temp_c,humidite_ref_rh,humidite_bme280_rh,pression_bme280_hpa,bruit_rms_pression_pa,diagnostic_banc
+EXP-01,Sleep_Mode,3.3,aucun (0x00),0,0.0,0.11,25.0,,,50.0,,,,Repos nominal conforme datasheet (< 0.3 uA)
+EXP-02,Forced_Meteo,3.3,P:x1 T:x1 H:x1,0,0.0167,0.18,22.4,22.48,0.08,48.0,48.6,1013.25,1.35,Optimal pour station météo sur batterie LiFePO4 (1 mesure/minute)
+EXP-03,Forced_Standard_1Hz,3.3,P:x1 T:x1 H:x1,0,1.0,3.62,25.0,25.12,0.12,55.0,55.8,1012.9,1.3,Consommation conforme au nominal 3.6 uA à 1 Hz
+EXP-04,Normal_HVAC_Intérieur,3.3,P:x2 T:x1 H:x1,4,1.0,4.95,21.0,21.15,0.15,45.0,44.3,1014.1,0.55,Filtrage IIR coeff 4 efficace contre les courants d'air de ventilation
+EXP-05,Normal_Drone_Altimetre,3.3,P:x16 T:x2 H:x1,16,25.0,635.0,25.0,25.45,0.45,50.0,49.1,1008.4,0.21,"Précision altimétrique ±1.7 cm (bruit RMS 0.21 Pa), idéal maintien altitude drone"
+EXP-06,Normal_Continu_Max,3.3,P:x16 T:x16 H:x16,16,15.0,710.0,25.0,27.35,2.35,50.0,43.2,1013.05,0.19,ANOMALIE AUTO-ÉCHAUFFEMENT (+2.35 °C) et baisse artificielle d'humidité (-6.8 % RH) dus aux conversions continues
+EXP-07,Forced_Basse_Tension,1.8,P:x1 T:x1 H:x1,0,1.0,3.45,20.0,20.04,0.04,60.0,60.5,1015.0,1.28,Fonctionnement nominal sous alimentation 1.8V (limite basse VDD = 1.71V)
+EXP-08,Chambre_Froide_-20C,3.3,P:x4 T:x2 H:x2,4,1.0,9.8,-20.0,-20.65,-0.65,35.0,36.4,1020.1,0.48,Conforme à l'enveloppe thermique basse (-40 °C à +85 °C)
+EXP-09,Etuve_Chaude_+75C,3.3,P:x4 T:x2 H:x2,4,1.0,11.4,75.0,75.55,0.55,25.0,25.9,995.6,0.52,Dérive thermique maîtrisée (+0.55 °C à 75 °C)
+EXP-10,Erreur_Ordre_Registres,3.3,P:x1 T:x1 H:x1 (0xF2 écrit après 0xF4),0,1.0,2.9,24.0,24.1,0.1,52.0,0.0,1013.4,1.31,"ERREUR LOGICIELLE : Registre ctrl_hum (0xF2) écrit après ctrl_meas (0xF4), mesure d'humidité ignorée (0.0 % RH)"

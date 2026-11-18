@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atelier Documentaire RAG — Assistant Projets Étudiants (Qwen2.5-7B)</title>
+  <meta name="description" content="Assistant technique RAG pour projets étudiants : extraction de datasheets PDF et datasets CSV/JSON, vectorisation sémantique hybride et génération assistée par Qwen2.5-7B-Instruct." />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+  <!-- Top Editorial Masthead -->
+  <header class="masthead">
+    <div class="masthead-brand">
+      <span class="masthead-tag">Laboratoire RAG</span>
+      <h1 class="masthead-title">Assistant Technique de Projets Étudiants</h1>
+      <span class="masthead-subtitle">Exploitation de Datasheets &amp; Datasets de Composants — Vectorisation Sémantique &amp; Qwen2.5-7B</span>
+    </div>
+
+    <div class="masthead-controls">
+      <div class="pipeline-badge" id="model-status-badge" title="État du moteur d'inférence Hugging Face Qwen2.5-7B">
+        <span class="status-indicator local-mode" id="status-dot"></span>
+        <span id="status-text">Initialisation du moteur RAG...</span>
+      </div>
+      <button type="button" class="btn" id="btn-open-config">
+        <svg class="btn-icon-svg" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Configuration Qwen2.5-7B
+      </button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Workbench -->
+  <main class="workbench">
+
+    <!-- Left Column: Corpus Ingestion & Semantic Index -->
+    <aside class="panel-corpus" aria-label="Corpus de Datasheets et Datasets">
+      <div class="panel-header">
+        <span class="panel-heading">1. Corpus Composants</span>
+        <span class="panel-count" id="corpus-count-label">0 document</span>
+      </div>
+
+      <!-- Drag & Drop / File Upload -->
+      <div class="upload-box" id="upload-dropzone">
+        <div class="upload-title">Importer une Datasheet ou un Dataset</div>
+        <div class="upload-formats">Formats : PDF, CSV, JSON, XLSX, MD, TXT</div>
+        <input type="file" id="file-input" accept=".pdf,.csv,.json,.xlsx,.xls,.md,.txt" hidden />
+        <div class="upload-actions">
+          <button type="button" class="btn btn-primary" id="btn-trigger-upload">
+            <svg class="btn-icon-svg" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Parcourir un fichier
+          </button>
+          <button type="button" class="btn" id="btn-reload-samples" title="Recharger la datasheet PDF et le dataset CSV d'exemple (Bosch BME280)">
+            Banc BME280
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Document Cards -->
+      <div class="doc-list" id="doc-list-container">
+        <!-- Populated dynamically via app.js -->
+      </div>
+
+      <!-- Vectorizer Telemetry Footer -->
+      <div class="vector-meta-box" id="vector-telemetry-box">
+        <div class="vector-meta-title">Index Vectoriel Sémantique</div>
+        <div class="vector-meta-row">
+          <span>Segments indexés :</span>
+          <strong id="stat-total-chunks">0</strong>
+        </div>
+        <div class="vector-meta-row">
+          <span>Dimensions :</span>
+          <strong id="stat-vector-dim">0</strong>
+        </div>
+        <div class="vector-meta-row">
+          <span>Modèle LLM :</span>
+          <strong id="stat-llm-name">Qwen2.5-7B-Instruct</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Column: Student Project RAG Dialogue -->
+    <section class="panel-dialogue" aria-label="Dialogue technique avec l'assistant RAG">
+
+      <!-- Guided Student Questions -->
+      <div class="prompts-strip">
+        <div class="prompts-strip-header">
+          <span class="prompts-strip-label">Questions types d'avancement de projet (Cliquez pour interroger le corpus)</span>
+          <button type="button" class="btn btn-ghost" id="btn-clear-chat" style="font-size: 0.74rem;">Réinitialiser l'échange</button>
+        </div>
+        <div class="prompts-grid">
+          <button type="button" class="prompt-pill" data-question="Quelles sont les limites de tension d'alimentation du BME280 et comment le câbler en I2C sur un ESP32 ou un Arduino 5V sans le détruire ?">
+            <span class="prompt-pill-cat">Alimentation &amp; Câblage I2C</span>
+            <span class="prompt-pill-text">Limites de tension VDD/VDDIO et branchement ESP32 vs Arduino 5V</span>
+          </button>
+          <button type="button" class="prompt-pill" data-question="Sur notre maquette, la mesure d'humidité reste bloquée à 0 % alors que la température fonctionne. Que disent la datasheet et le dataset d'essais (EXP-10) sur l'ordre d'écriture des registres 0xF2 et 0xF4 ?">
+            <span class="prompt-pill-cat">Débogage Registres (Datasheet + CSV)</span>
+            <span class="prompt-pill-text">Humidité bloquée à 0 % : ordre d'écriture des registres 0xF2 et 0xF4</span>
+          </button>
+          <button type="button" class="prompt-pill" data-question="D'après le dataset d'essais de calibration, pourquoi observe-t-on une erreur thermique de +2.35 °C dans l'essai EXP-06 et quel profil de configuration choisir pour une station météo autonome sur batterie ?">
+            <span class="prompt-pill-cat">Analyse Dataset &amp; Consommation</span>
+            <span class="prompt-pill-text">Anomalie d'auto-échauffement (EXP-06) et bilan énergétique station météo</span>
+          </button>
+          <button type="button" class="prompt-pill" data-question="Quels réglages d'oversampling et de filtre IIR la datasheet recommande-t-elle pour un altimètre de drone, et quel bruit RMS en pression obtient-on dans l'essai EXP-05 ?">
+            <span class="prompt-pill-cat">Filtrage IIR &amp; Précision Drone</span>
+            <span class="prompt-pill-text">Configuration altimétrique drone et bruit RMS en pression (EXP-05)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Conversation History -->
+      <div class="conversation-stream" id="conversation-stream">
+        <article class="message-entry assistant">
+          <div class="message-meta">
+            <span class="message-author assistant">Ingénieur-Encadrant RAG (Qwen2.5-7B)</span>
+            <span>Prêt pour l'analyse</span>
+          </div>
+          <div class="message-body">
+            <h3>Bienvenue dans l'atelier d'analyse de datasheets et de datasets</h3>
+            <p>
+              Cet environnement assiste votre équipe projet dans l'exploitation directe des documents constructeurs (<strong>datasheets PDF</strong>) et des relevés expérimentaux (<strong>datasets CSV / JSON / Excel</strong>).
+            </p>
+            <p>
+              Le corpus de démarrage contient trois fichiers pré-indexés pour le capteur environnemental <code>Bosch BME280</code> :
+            </p>
+            <ul>
+              <li><code>BME280_Datasheet_Technique_FR.pdf</code> : spécifications électriques (Page 1), brochage et bus I2C/SPI (Page 2), cartographie des registres <code>0xD0</code>, <code>0xF2</code>, <code>0xF4</code> et guide de dépannage (Page 3).</li>
+              <li><code>BME280_Dataset_Essais_Calibration.csv</code> : 10 campagnes de mesures en laboratoire (<code>EXP-01</code> à <code>EXP-10</code>) comparant consommation en µA, dérive thermique et bruit RMS.</li>
+              <li><code>Comparatif_Composants_Capteurs_I2C.json</code> : matrice de compatibilité électrique entre <code>BME280</code>, <code>BMP280</code>, <code>SHT31-D</code> et <code>INA219</code>.</li>
+            </ul>
+            <p>
+              Sélectionnez une question type ci-dessus, posez votre propre question technique ou importez la datasheet PDF / le dataset CSV de votre composant dans la colonne de gauche. Chaque réponse cite précisément la page ou la ligne exploitée.
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Question Composer -->
+      <div class="composer-area">
+        <form class="composer-form" id="chat-form">
+          <div class="composer-input-wrap">
+            <textarea
+              id="question-input"
+              class="composer-textarea"
+              rows="2"
+              placeholder="Posez une question précise sur une tension, un brochage, un registre hexadécimal ou une ligne du dataset..."
+              required
+            ></textarea>
+            <div class="composer-toolbar">
+              <div class="composer-options">
+                <label for="select-topk">
+                  Extraits RAG (Top-K) :
+                  <select id="select-topk" class="composer-select">
+                    <option value="3">3 segments</option>
+                    <option value="4" selected>4 segments</option>
+                    <option value="6">6 segments</option>
+                  </select>
+                </label>
+                <label for="select-doc-filter">
+                  Cible :
+                  <select id="select-doc-filter" class="composer-select">
+                    <option value="all">Tous les documents indexés</option>
+                  </select>
+                </label>
+              </div>
+              <span>Entrée pour envoyer · Maj+Entrée pour saut de ligne</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-submit-question" style="height: 54px; padding: 0 1.25rem;">
+            Interroger le RAG
+          </button>
+        </form>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Citations & Document Segment Inspector -->
+    <aside class="panel-inspector" aria-label="Sources citées et inspecteur de segments">
+      <div class="inspector-tabs">
+        <button type="button" class="inspector-tab active" id="tab-btn-citations">
+          Citations RAG (<span id="citation-count-badge">0</span>)
+        </button>
+        <button type="button" class="inspector-tab" id="tab-btn-explorer">
+          Inspecteur Document
+        </button>
+      </div>
+
+      <!-- Tab 1: Active Query Retrieved Citations -->
+      <div class="inspector-content" id="tab-panel-citations">
+        <div class="empty-notice">
+          Posez une question technique pour afficher ici les extraits exacts de la datasheet (numéro de page) ou du dataset (numéro de ligne) avec leur score de similarité cosinus.
+        </div>
+      </div>
+
+      <!-- Tab 2: Document Chunk & Telemetry Explorer -->
+      <div class="inspector-content" id="tab-panel-explorer" style="display: none;">
+        <div class="empty-notice">
+          Cliquez sur un document dans la colonne de gauche pour inspecter ses segments vectorisés, ses tensions détectées ou ses statistiques numériques.
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Modal Configuration Hugging Face Qwen2.5-7B -->
+  <div class="modal-backdrop" id="config-modal" role="dialog" aria-modal="true" aria-labelledby="modal-config-title">
+    <div class="modal-dialog">
+      <h2 class="modal-title" id="modal-config-title">Paramètres d'Inférence Hugging Face</h2>
+      <p class="modal-desc">
+        Configurez l'accès à l'API Hugging Face Serverless pour exécuter le modèle <code>Qwen/Qwen2.5-7B-Instruct</code> et les embeddings denses. En l'absence de jeton, l'application utilise son moteur de synthèse documentaire local avec citations exactes.
+      </p>
+      <form id="config-form">
+        <div class="form-group">
+          <label class="form-label" for="input-model-id">Identifiant du Modèle Hugging Face</label>
+          <input type="text" id="input-model-id" class="form-input" value="Qwen/Qwen2.5-7B-Instruct" required />
+          <div class="form-help">Modèle recommandé : Qwen/Qwen2.5-7B-Instruct</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-hf-token">Jeton d'accès Hugging Face (HF_TOKEN)</label>
+          <input type="password" id="input-hf-token" class="form-input" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+          <div class="form-help">Optionnel : votre clé reste uniquement en mémoire vive pour la session en cours.</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="btn-close-config">Annuler</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-config">Enregistrer et Ré-indexer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

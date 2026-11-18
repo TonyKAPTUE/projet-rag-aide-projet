@@ -1,0 +1,42 @@
+[
+  {
+    "composant_ref": "BOSCH-BME280",
+    "categorie": "Capteur environnemental P/T/RH",
+    "tension_alimentation_v": "1.71 - 3.6 V (VDD), 1.2 - 3.6 V (VDDIO)",
+    "tolerance_5v": "Non (Destruction > 4.25 V)",
+    "bus_supportes": "I2C (0x76, 0x77 jusqu'à 3.4 MHz), SPI (3 et 4 fils jusqu'à 10 MHz)",
+    "identifiant_registre_0xD0": "0x60",
+    "consommation_1hz_ua": 3.6,
+    "recommandation_projet": "Idéal pour station météo IoT ESP32/STM32 et altimètre drone"
+  },
+  {
+    "composant_ref": "BOSCH-BMP280",
+    "categorie": "Capteur barométrique P/T (Sans humidité)",
+    "tension_alimentation_v": "1.71 - 3.6 V (VDD), 1.2 - 3.6 V (VDDIO)",
+    "tolerance_5v": "Non (Destruction > 4.25 V)",
+    "bus_supportes": "I2C (0x76, 0x77), SPI (jusqu'à 10 MHz)",
+    "identifiant_registre_0xD0": "0x58",
+    "consommation_1hz_ua": 2.7,
+    "recommandation_projet": "Souvent confondu avec le BME280 sur les modules étudiants. Vérifier 0xD0 == 0x58."
+  },
+  {
+    "composant_ref": "SENSIRION-SHT31-D",
+    "categorie": "Capteur humidité et température haute précision",
+    "tension_alimentation_v": "2.15 - 5.5 V",
+    "tolerance_5v": "Oui (Compatible nativement Arduino 5V et ESP32 3.3V)",
+    "bus_supportes": "I2C uniquement (Adresses 0x44 par défaut, 0x45 si ADR = VDD)",
+    "identifiant_registre_0xD0": "N/A (Commande I2C 16 bits 0xF32D pour Status)",
+    "consommation_1hz_ua": 17.0,
+    "recommandation_projet": "Alternative directe compatible 5V si le projet n'exige pas la pression atmosphérique"
+  },
+  {
+    "composant_ref": "TEXAS-INSTRUMENTS-INA219",
+    "categorie": "Moniteur de courant et puissance High-Side I2C",
+    "tension_alimentation_v": "3.0 - 5.5 V (Tension de bus mesurée : 0 à 26 V)",
+    "tolerance_5v": "Oui (Alimentation logique 3.3V ou 5V)",
+    "bus_supportes": "I2C (16 adresses configurables de 0x40 à 0x4F via A0/A1)",
+    "identifiant_registre_0xD0": "Registre Config 0x00 = 0x399F au reset",
+    "consommation_1hz_ua": 700.0,
+    "recommandation_projet": "Recommandé pour mesurer la consommation énergétique réelle du système étudiant"
+  }
+]

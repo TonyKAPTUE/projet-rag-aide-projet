@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atelier Documentaire RAG — Version Autonome PC (Qwen2.5-7B)</title>
+  <link rel="stylesheet" href="frontend/styles.css" />
+  <style>
+    /* Fallback variables if opened standalone without server */
+    body { background: #F7F5F0; color: #181816; font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; }
+    .standalone-banner { background: #1E4D6B; color: #FAF8F5; font-family: monospace; font-size: 0.78rem; padding: 0.45rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="standalone-banner">
+    <span>MODE AUTONOME PC (SANS SERVEUR REQUIS) — Extraction, Vectorisation Sémantique &amp; Appel Direct Qwen/Qwen2.5-7B-Instruct</span>
+    <span>Double-cliquez sur lancer_windows.bat pour la version serveur FastAPI complète</span>
+  </div>
+
+  <header class="masthead">
+    <div class="masthead-brand">
+      <span class="masthead-tag">Laboratoire RAG</span>
+      <h1 class="masthead-title">Assistant Technique de Projets Étudiants</h1>
+      <span class="masthead-subtitle">Exploitation de Datasheets &amp; Datasets de Composants — Vectorisation Sémantique &amp; Qwen2.5-7B</span>
+    </div>
+    <div class="masthead-controls">
+      <input type="password" id="hf-token-inline" class="form-input" placeholder="Clé HF_TOKEN (optionnel pour Qwen2.5-7B API)" style="width: 270px; padding: 0.35rem 0.6rem; font-size: 0.78rem;" />
+    </div>
+  </header>
+
+  <main class="workbench">
+    <aside class="panel-corpus">
+      <div class="panel-header">
+        <span class="panel-heading">1. Corpus Composants</span>
+        <span class="panel-count" id="standalone-doc-count">3 documents</span>
+      </div>
+      <div class="upload-box">
+        <div class="upload-title">Importer un Dataset ou Document</div>
+        <div class="upload-formats">Formats directs : CSV, JSON, TXT, MD</div>
+        <input type="file" id="standalone-file" accept=".csv,.json,.txt,.md" style="margin-top: 0.4rem; font-size: 0.78rem; width: 100%;" />
+      </div>
+      <div class="doc-list" id="standalone-doc-list">
+        <div class="doc-card active">
+          <div class="doc-card-top"><span class="doc-type-label datasheet">DATASHEET · PDF</span></div>
+          <div class="doc-name">BME280_Datasheet_Technique_FR.pdf</div>
+          <div class="doc-stats"><span>3 pages</span><span>12 segments</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-card-top"><span class="doc-type-label dataset">DATASET · CSV</span></div>
+          <div class="doc-name">BME280_Dataset_Essais_Calibration.csv</div>
+          <div class="doc-stats"><span>10 lignes</span><span>11 segments</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-card-top"><span class="doc-type-label dataset">DATASET · JSON</span></div>
+          <div class="doc-name">Comparatif_Composants_Capteurs_I2C.json</div>
+          <div class="doc-stats"><span>4 entrées</span><span>5 segments</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="panel-dialogue">
+      <div class="prompts-strip">
+        <div class="prompts-strip-header">
+          <span class="prompts-strip-label">Questions types d'avancement de projet (Cliquez pour tester)</span>
+        </div>
+        <div class="prompts-grid">
+          <button type="button" class="prompt-pill" data-q="Quelles sont les limites de tension d'alimentation du BME280 et comment le câbler en I2C sur un ESP32 ou un Arduino 5V sans le détruire ?">
+            <span class="prompt-pill-cat">Alimentation &amp; Câblage I2C</span>
+            <span class="prompt-pill-text">Limites VDD/VDDIO et branchement ESP32 vs Arduino 5V</span>
+          </button>
+          <button type="button" class="prompt-pill" data-q="Sur notre maquette, la mesure d'humidité reste bloquée à 0 %. Que disent la datasheet et l'essai EXP-10 sur l'ordre d'écriture des registres 0xF2 et 0xF4 ?">
+            <span class="prompt-pill-cat">Débogage Registres (0xF2 / 0xF4)</span>
+            <span class="prompt-pill-text">Humidité bloquée à 0 % : ordre d'écriture 0xF2 et 0xF4</span>
+          </button>
+          <button type="button" class="prompt-pill" data-q="Pourquoi observe-t-on une erreur thermique de +2.35 °C dans l'essai EXP-06 et quel profil choisir pour une station météo sur batterie ?">
+            <span class="prompt-pill-cat">Analyse Dataset &amp; Batterie</span>
+            <span class="prompt-pill-text">Auto-échauffement EXP-06 (+2.35 °C) et bilan batterie</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="conversation-stream" id="standalone-stream"></div>
+
+      <div class="composer-area">
+        <form class="composer-form" id="standalone-form">
+          <div class="composer-input-wrap">
+            <textarea id="standalone-input" class="composer-textarea" rows="2" placeholder="Posez votre question technique sur la datasheet ou le dataset..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height: 54px; padding: 0 1.25rem;">Interroger le RAG</button>
+        </form>
+      </div>
+    </section>
+
+    <aside class="panel-inspector">
+      <div class="inspector-tabs">
+        <button type="button" class="inspector-tab active">Citations Vectorielles</button>
+      </div>
+      <div class="inspector-content" id="standalone-citations"></div>
+    </aside>
+  </main>
+
+  <script>
+    const CHUNKS = [
+      {
+        doc_name: "BME280_Datasheet_Technique_FR.pdf",
+        doc_type: "datasheet",
+        source_ref: "Page 1",
+        section_title: "2. Caractéristiques Électriques et Alimentation",
+        content: "- Tension d'alimentation principale (VDD) : 1.71 V à 3.6 V (nominal typique : 3.3 V).\n- Tension d'interface logique (VDDIO) : 1.2 V à 3.6 V.\n- ATTENTION CRITIQUE : Le BME280 n'est PAS tolérant au 5.0 V direct sur VDD, VDDIO, SDA ou SCL (destruction au-delà de 4.25 V).\n- Courant Sleep mode : 0.1 µA | Mesure P+T+H 1 Hz (Forced Mode) : 3.6 µA."
+      },
+      {
+        doc_name: "BME280_Datasheet_Technique_FR.pdf",
+        doc_type: "datasheet",
+        source_ref: "Page 2",
+        section_title: "5 & 6. Brochage (Pinout), Adressage I2C (0x76/0x77) et Câblage",
+        content: "- Broche 2 (CSB) : Relier à VDDIO (3.3V) pour verrouiller le mode I2C.\n- Broche 5 (SDO) : SDO à GND = adresse 0x76 ; SDO à VDDIO = adresse 0x77.\n- Pull-up de 4.7 kOhm obligatoires sur SDA et SCL.\n- ESP32 (3.3V) : SDA -> GPIO 21, SCL -> GPIO 22. Arduino 5V : Level Shifter MOSFET 5V <-> 3.3V obligatoire."
+      },
+      {
+        doc_name: "BME280_Datasheet_Technique_FR.pdf",
+        doc_type: "datasheet",
+        source_ref: "Page 3",
+        section_title: "8 & 10. Cartographie des Registres (0xD0, 0xF2, 0xF4) et Dépannage",
+        content: "- Registre 0xD0 (chip_id) : 0x60 = BME280 ; 0x58 = BMP280 (sans humidité).\n- Registre 0xF2 (ctrl_hum) : RÈGLE CRITIQUE : Toute écriture dans 0xF2 ne prend effet qu'APRÈS une écriture dans 0xF4 (ctrl_meas). Toujours écrire 0xF2 avant 0xF4.\n- Symptôme humidité bloquée à 0 % : 0xF2 écrit après 0xF4, ou composant BMP280."
+      },
+      {
+        doc_name: "BME280_Dataset_Essais_Calibration.csv",
+        doc_type: "dataset",
+        source_ref: "Ligne 2 (EXP-02)",
+        section_title: "Enregistrement Dataset : EXP-02 (Forced_Meteo)",
+        content: "essai_id: EXP-02 | mode: Forced_Meteo | VDD: 3.30 V | oversampling: P:x1 T:x1 H:x1 | courant_moyen: 0.18 µA | erreur_temp: +0.08 °C | diagnostic: Optimal pour station météo sur batterie LiFePO4 (1 mesure/minute)."
+      },
+      {
+        doc_name: "BME280_Dataset_Essais_Calibration.csv",
+        doc_type: "dataset",
+        source_ref: "Ligne 5 (EXP-05)",
+        section_title: "Enregistrement Dataset : EXP-05 (Normal_Drone_Altimetre)",
+        content: "essai_id: EXP-05 | mode: Normal_Drone_Altimetre | oversampling: P:x16 T:x2 H:x1 | filtre_iir_coeff: 16 | courant_moyen: 635.0 µA | bruit_rms_pression: 0.21 Pa | diagnostic: Précision altimétrique ±1.7 cm."
+      },
+      {
+        doc_name: "BME280_Dataset_Essais_Calibration.csv",
+        doc_type: "dataset",
+        source_ref: "Ligne 6 (EXP-06)",
+        section_title: "Enregistrement Dataset : EXP-06 (Anomalie Auto-Échauffement)",
+        content: "essai_id: EXP-06 | mode: Normal_Continu_Max | oversampling: P:x16 T:x16 H:x16 | courant_moyen: 710.0 µA | temp_ref: 25.00 °C | temp_bme280: 27.35 °C | erreur_temp: +2.35 °C | diagnostic: ANOMALIE AUTO-ÉCHAUFFEMENT (+2.35 °C) due aux conversions continues."
+      },
+      {
+        doc_name: "BME280_Dataset_Essais_Calibration.csv",
+        doc_type: "dataset",
+        source_ref: "Ligne 10 (EXP-10)",
+        section_title: "Enregistrement Dataset : EXP-10 (Erreur Ordre Registres)",
+        content: "essai_id: EXP-10 | config: 0xF2 écrit après 0xF4 | humidite_ref: 52.0 % | humidite_bme280: 0.0 % RH | diagnostic: ERREUR LOGICIELLE : Registre ctrl_hum (0xF2) écrit après ctrl_meas (0xF4), mesure d'humidité ignorée."
+      }
+    ];
+
+    function norm(s) { return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+    function searchChunks(q) {
+      const tokens = norm(q).match(/[a-z0-9_x\.\-\+]{2,}/g) || [];
+      return CHUNKS.map((c) => {
+        const hay = norm(c.section_title + " " + c.content + " " + c.source_ref);
+        let hits = 0;
+        tokens.forEach((t) => { if (hay.includes(t)) hits += 1.5; });
+        return { chunk: c, score: Math.min(0.98, Math.max(0.2, hits / Math.max(3, tokens.length))) };
+      }).sort((a, b) => b.score - a.score).slice(0, 3);
+    }
+
+    async function handleQuery(q) {
+      const stream = document.getElementById("standalone-stream");
+      const top = searchChunks(q);
+      const token = document.getElementById("hf-token-inline").value.trim();
+
+      let answerHtml = "";
+      let modeLabel = "Synthèse Documentaire Locale";
+
+      if (token) {
+        try {
+          const ctx = top.map((t, i) => `SOURCE #${i+1} [${t.chunk.doc_name} — ${t.chunk.source_ref}]:\n${t.chunk.content}`).join("\n\n");
+          const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "Qwen/Qwen2.5-7B-Instruct",
+              messages: [
+                { role: "system", content: "Vous êtes un ingénieur-enseignant pour projets étudiants. Répondez sans aucun emoji en citant les sources entre crochets [Fichier — Page/Ligne]." },
+                { role: "user", content: `CONTEXTE:\n${ctx}\n\nQUESTION:\n${q}` }
+              ],
+              max_tokens: 600,
+              temperature: 0.2
+            })
+          });
+          if (resp.ok) {
+            const d = await resp.json();
+            answerHtml = `<p style="white-space:pre-line">${d.choices[0].message.content}</p>`;
+            modeLabel = "Qwen/Qwen2.5-7B-Instruct (Hugging Face API)";
+          }
+        } catch (e) { console.warn(e); }
+      }
+
+      if (!answerHtml) {
+        answerHtml = `<h3>Analyse technique à partir du corpus</h3>` +
+          top.map((t) => `<p><strong>${t.chunk.section_title}</strong> <span class="inline-citation">[${t.chunk.doc_name} — ${t.chunk.source_ref}]</span><br/><code>${t.chunk.content}</code></p>`).join("");
+      }
+
+      stream.innerHTML += `
+        <article class="message-entry student">
+          <div class="message-meta"><span class="message-author student">Étudiant</span></div>
+          <div class="message-body"><p>${q}</p></div>
+        </article>
+        <article class="message-entry assistant">
+          <div class="message-meta"><span class="message-author assistant">Ingénieur-Encadrant RAG</span><span>${modeLabel}</span></div>
+          <div class="message-body">${answerHtml}</div>
+        </article>
+      `;
+      stream.scrollTop = stream.scrollHeight;
+
+      document.getElementById("standalone-citations").innerHTML = top.map((t, idx) => `
+        <div class="citation-card">
+          <div class="citation-header">
+            <span class="citation-ref-badge">#${idx+1} · ${t.chunk.source_ref}</span>
+            <span class="citation-score">${(t.score * 100).toFixed(1)} %</span>
+          </div>
+          <div class="citation-doc-title">${t.chunk.doc_name}</div>
+          <div class="citation-section">${t.chunk.section_title}</div>
+          <div class="citation-excerpt">${t.chunk.content}</div>
+        </div>
+      `).join("");
+    }
+
+    document.querySelectorAll(".prompt-pill").forEach((b) => {
+      b.addEventListener("click", () => handleQuery(b.getAttribute("data-q")));
+    });
+
+    document.getElementById("standalone-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const inp = document.getElementById("standalone-input");
+      if (inp.value.trim()) { handleQuery(inp.value.trim()); inp.value = ""; }
+    });
+
+    document.getElementById("standalone-file").addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const lines = String(ev.target.result || "").split(/\r?\n/).filter((l) => l.trim());
+        for (let i = 0; i < Math.min(lines.length, 20); i += 3) {
+          CHUNKS.unshift({
+            doc_name: f.name,
+            doc_type: f.name.endsWith(".csv") ? "dataset" : "datasheet",
+            source_ref: `Lignes ${i+1}-${Math.min(i+3, lines.length)}`,
+            section_title: `Extrait importé (${f.name})`,
+            content: lines.slice(i, i+3).join("\n")
+          });
+        }
+        handleQuery(`Analyse des données importées depuis ${f.name}`);
+      };
+      r.readAsText(f);
+    });
+
+    handleQuery(document.querySelector(".prompt-pill").getAttribute("data-q"));
+  </script>
+</body>
+</html>
